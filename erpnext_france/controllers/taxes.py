@@ -832,7 +832,7 @@ def find_item_tax_template(taxes_map):
     # Construit une requête pour obtenir les templates et leurs taxes_map
     query = (
         frappe.qb.from_(ItemTaxTemplateTax)
-        .select(ItemTaxTemplateTax.parent.as_("template_name"), ItemTaxTemplateTax.tax_type)
+        .select(ItemTaxTemplateTax.parent.as_("template_name"), ItemTaxTemplateTax.tax_type, ItemTaxTemplateTax.tax_rate)
         .where(ItemTaxTemplateTax.tax_type.isin(taxes_map))
     )
 
@@ -854,7 +854,21 @@ def find_item_tax_template(taxes_map):
 
     tax_template_name = None
     if len(matching_templates) > 0:
-        tax_template_name = matching_templates[0]
+        # Mel B, if multiple templates are found, take the one that corresponds to the rate from
+        # Sales Taxes and Charges Template that was passed in taxes_map
+        account = frappe.get_cached_doc('Account', taxes_map[0])
+
+        for template in matching_templates:
+            for row in result:
+                if row.template_name == template and row.tax_type == taxes_map[0]:
+                    if flt(row.tax_rate) == flt(account.tax_rate):
+                        tax_template_name = template
+                        break
+            if tax_template_name:
+                break
+
+        if not tax_template_name:
+            tax_template_name = matching_templates[0]
     else:
         frappe.throw(_("Missing Item Tax Template Corresponding to Sales Taxes and Charges Template"))
 
