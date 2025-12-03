@@ -640,7 +640,7 @@ Down payment invoices can only be made against a single sales order., Les factur
 "Default tax templates for sales, purchase and items are created.","Les modèles de taxes d'article, de vente et d'achat ont été créée",
 Please Save your doc before getting down payment, Veuillez sauvegarder le document avant de récupérer les acomptes,
 Down Payment is already included in this document, Les acomptes on déjà été récupéré sur ce document.,
-Down Payment {0} {1} on Sales Order {2} {3} € HT, Acompte {0} {1} de la commande {2}: {3} HT,
+Down Payment {0} {1} on Sales Order {2} {3} € HT, <strong>Acompte {0} {1}</strong> de la commande {2},
 "Down Payment Retribution {0} {1} {2} on Sales Order {3} {4} € HT","Soustraction de l'acompte {0} {1} {2} de la commande {3} {4} HT",
 Allocate Leaves,Allouer des congés manuellement,
 Manual Leave Allocation,Affectation manuel de congés,
@@ -655,3 +655,5 @@ Clear & Add Template,Appliquer le modèle
 Prepend the template to the email message,Ajouter le contenu du modèle à la suite
 Clear the email message and add the template,Remplacer par le contenu du modèle
 Production Plan,Planification de la prod.
+"Down Payment Retribution {0}<br/>{1} {2} on Sales Order {3}<br/>{4} € TTC - TVA {5}%","<strong>Soustraction de l'acompte {0}</strong><br/>{1} {2} de la commande {3}<br/>{4} € TTC - TVA {5}%</strong>"
+"Down Payment {0} {1} on Sales Order {2}<br/>On TVA {3}%","<strong>Acompte {0} {1}</strong> de la commande {2}<br/>appliqué sur TVA {3}%"

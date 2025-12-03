@@ -175,21 +175,22 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 				float(group_down_payments_item_map[item_tax_template]) * float(new_discount_percent) / 100
 			)
 
-			docitem.description = _("Down Payment {0} {1} on Sales Order {2} {3} € HT").format(
+			docitem.description = _("<strong>Acompte {0} {1}</strong> de la commande {2}<br/>appliqué sur TVA {3}%").format(
 				values.down_payment_value,
 				"%",
 				str(order.name),
-				frappe.format_value(docitem.rate, {"fieldtype": "Currency"}),
+				"5,5" if item_tax_template.startswith("TVA réduite") else "20"
 			)
 		else:
 			docitem.rate = float(group_down_payments_item_map[item_tax_template]) * new_discount_percent / 100
-			docitem.description = _("Down Payment {0} {1} on Sales Order {2} {3} € HT").format(
+			docitem.description = _("<strong>Acompte {0} {1}</strong> de la commande {2}<br/>appliqué sur TVA {3}%").format(
 				values.down_payment_value,
 				"€",
 				str(order.name),
-				frappe.format_value(docitem.rate, {"fieldtype": "Currency"}),
+				"5,5" if item_tax_template.startswith("TVA réduite") else "20"
 			)
 
+		frappe.errprint(docitem.description)
 		docitem.qty = 1
 		docitem.amount = docitem.rate
 		docitem.uom = "Unité"

@@ -78,16 +78,18 @@ def get_down_payment(doc):
 			new_sinv_item.item_tax_template = sinv_item.item_tax_template
 			new_sinv_item.sales_order = sinv_item.sales_order
 			new_sinv_item.description = _(
-				"Down Payment Retribution {0} {1} {2} on Sales Order {3} {4} € HT"
+				"<strong>Soustraction de l'acompte {0}</strong><br/>{1} {2} de la commande {3}<br/>appliqué sur TVA {5}%"
 			).format(
 				str(sales_invoice.name),
 				str(new_sinv_item.down_payment_rate),
 				"%",
 				str(sinv_item.sales_order),
 				frappe.format_value(new_sinv_item.rate, {"fieldtype": "Currency"}),
+				"5,5" if sinv_item.item_tax_template.startswith("TVA réduite") else "20",
 			)
 			current_doc.append("items", new_sinv_item)
 
+	current_doc.down_payment_against = sales_invoice.name
 	current_doc.save()
 	return doc
 
@@ -390,6 +392,9 @@ def get_advance_payment_entries(
 	order_doctype,
 	order_list=None,
 ):
+	from frappe.query_builder.custom import ConstantColumn
+	from frappe.query_builder.functions import Abs, Sum
+
 	party_account_field = "paid_from" if party_type == "Customer" else "paid_to"
 	currency_field = "paid_from_account_currency" if party_type == "Customer" else "paid_to_account_currency"
 	payment_type = "Receive" if party_type == "Customer" else "Pay"
