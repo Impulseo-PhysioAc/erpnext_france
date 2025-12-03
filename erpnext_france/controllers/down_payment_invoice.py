@@ -39,6 +39,7 @@ def init_down_payment_invoice(order_name, values):
 			"project": order.project,
 			"transaction_date": frappe.utils.getdate(),
 			"is_down_payment_invoice": 1,
+			"down_payment_payment_for": order.name
 		}
 	)
 
@@ -119,14 +120,24 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 		frappe.throw(_("Cannot find Deposit Item, may be missing Item with checkbox Is Down Payment"))
 		return
 
-	down_payment_item = frappe.get_cached_doc("Item", down_payment_items[0].name)
-	income_account = get_down_payment_item_default(down_payment_item.item_code)
+	# Map tax templates to specific down payment items
+	tax_template_item_map = {}
+	default_down_payment_item = None
 
-	if not income_account or income_account == "":
-		frappe.throw(
-			_("Cannot find Deposit Item, may be missing Default Accountancy table with Income Account")
-		)
-		return
+	for item_ref in down_payment_items:
+		item_doc = frappe.get_doc("Item", item_ref.name)
+
+		if not default_down_payment_item:
+			default_down_payment_item = item_doc
+
+		if item_doc.taxes:
+			# Assume the first tax template found on the item is the one to map
+			template_name = item_doc.taxes[0].item_tax_template
+			if template_name:
+				tax_template_item_map[template_name] = item_doc.name
+	
+	if not default_down_payment_item:
+		frappe.throw(_("Cannot find any Down Payment Item"))
 
 	down_payments_item_map = []
 	for order_item in order.items:
@@ -148,12 +159,17 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 	elif values.down_payment_type == "ByPercent":
 		if float(values.down_payment_value) > 0:
 			new_discount_percent = float(values.down_payment_value)
-
 	for item_tax_template in group_down_payments_item_map.keys():
-		docitem = frappe.new_doc("Sales Invoice Item")
-		docitem.item_code = down_payment_item.name
-		docitem.sales_order = order.name
+		# Select specific item for this tax template, or fallback to default
+		target_item = tax_template_item_map.get(item_tax_template, default_down_payment_item)
+		
+		income_account = get_down_payment_item_default(target_item)
+		if not income_account or income_account == "":
+			frappe.throw(_("Cannot find Income Account for Down Payment Item {0}").format(target_item))
 
+		docitem = frappe.new_doc("Sales Invoice Item")
+		docitem.item_code = target_item
+		docitem.sales_order = order.name
 		if values.down_payment_type == "ByPercent":
 			docitem.rate = (
 				float(group_down_payments_item_map[item_tax_template]) * float(new_discount_percent) / 100
@@ -176,7 +192,7 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 
 		docitem.qty = 1
 		docitem.amount = docitem.rate
-		docitem.uom = down_payment_item.stock_uom
+		docitem.uom = "Unité"
 		docitem.conversion_factor = 1
 		docitem.income_account = income_account
 		docitem.discount_amount = 0
@@ -186,6 +202,7 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 
 
 def get_item_tax_template(order, order_item, item, down_payments_item_map):
+	from erpnext_france.controllers.taxes import find_item_tax_template
 	item_tax_template_name = None
 	if order_item.item_tax_template:
 		item_tax_template = frappe.get_cached_doc("Item Tax Template", order_item.item_tax_template)
