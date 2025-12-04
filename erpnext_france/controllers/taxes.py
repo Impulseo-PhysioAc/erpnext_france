@@ -861,9 +861,9 @@ def find_item_tax_template(taxes_map):
         for template in matching_templates:
             for row in result:
                 if row.template_name == template and row.tax_type == taxes_map[0]:
-                    if flt(row.tax_rate) == flt(account.tax_rate):
-                        tax_template_name = template
-                        break
+                    # passe pas avec la belgique... a controler e nouveau en FR # if flt(row.tax_rate) == flt(account.tax_rate):
+                    tax_template_name = template
+                    break
             if tax_template_name:
                 break
 

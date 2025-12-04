@@ -67,7 +67,9 @@ class SalesInvoiceDownPayment(SalesInvoice):
 			self.update_stock_ledger()
 
 		# this sequence because outstanding may get -ve
-		self.make_gl_entries()
+		gl_entries = self.get_gl_entries()  # ou logique FR existante
+		gl_entries = self._filter_zero_gl_entries(gl_entries)
+		self.make_gl_entries(gl_entries)
 		rename_temporarily_named_docs("GL Entry")
 
 		if self.update_stock == 1:
@@ -326,3 +328,11 @@ class SalesInvoiceDownPayment(SalesInvoice):
 		# expense account gl entries
 		if cint(self.update_stock) and is_perpetual_inventory_enabled(self.company):
 			gl_entries += super(SalesInvoice, self).get_gl_entries()
+
+	# Mel B Clean GL entries: remove invalid zero-amount lines
+	def _filter_zero_gl_entries(self, gl_entries):
+		return [
+			e for e in gl_entries
+			if abs(flt(e.get("debit") or 0)) > 0.0001
+			or abs(flt(e.get("credit") or 0)) > 0.0001
+		]
