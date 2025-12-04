@@ -825,7 +825,7 @@ def set_down_payment_ecotax_from_sales_order_item(sales_invoice_item, item, posi
             item.append("eco_part", new_ecopart)
 
 
-def find_item_tax_template(taxes_map):
+def find_item_tax_template(taxes_map, item_tax_map):
     # Utilise le DocType pour la table enfant "Item Tax Template Tax"
     ItemTaxTemplateTax = DocType("Item Tax Template Detail")
 
@@ -856,14 +856,13 @@ def find_item_tax_template(taxes_map):
     if len(matching_templates) > 0:
         # Mel B, if multiple templates are found, take the one that corresponds to the rate from
         # Sales Taxes and Charges Template that was passed in taxes_map
-        account = frappe.get_cached_doc('Account', taxes_map[0])
 
         for template in matching_templates:
             for row in result:
                 if row.template_name == template and row.tax_type == taxes_map[0]:
-                    # passe pas avec la belgique... a controler e nouveau en FR # if flt(row.tax_rate) == flt(account.tax_rate):
-                    tax_template_name = template
-                    break
+                    if flt(row.tax_rate) == flt(item_tax_map[0]):
+                        tax_template_name = template
+                        break
             if tax_template_name:
                 break
 

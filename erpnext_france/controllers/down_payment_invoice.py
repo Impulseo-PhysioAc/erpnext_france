@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.utils import cint, flt
-
+import json
 from erpnext_france.controllers.accounts_controller import get_down_payment_item_default
 from erpnext_france.controllers.taxes import find_item_tax_template
 
@@ -139,10 +139,25 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 	if not default_down_payment_item:
 		frappe.throw(_("Cannot find any Down Payment Item"))
 
+	item_tax_map = {}
+	for row in order.taxes or []:
+		if row.charge_type != "On Net Total":
+			continue
+		raw = row.item_wise_tax_detail
+		if not raw:
+			continue
+		if isinstance(raw, str):
+			try:
+				item_tax_map = json.loads(raw)
+			except:
+				continue
+		else:
+			item_tax_map = raw
+
 	down_payments_item_map = []
 	for order_item in order.items:
 		item = frappe.get_cached_doc("Item", order_item.item_code)
-		get_item_tax_template(order, order_item, item, down_payments_item_map)
+		get_item_tax_template(order, order_item, item, down_payments_item_map, item_tax_map)
 
 	group_down_payments_item_map = {}
 	for down_payments_item_info in down_payments_item_map:
@@ -201,7 +216,7 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 		down_payment_invoice.append("items", docitem)
 
 
-def get_item_tax_template(order, order_item, item, down_payments_item_map):
+def get_item_tax_template(order, order_item, item, down_payments_item_map, item_tax_map):
 	from erpnext_france.controllers.taxes import find_item_tax_template
 	item_tax_template_name = None
 	if order_item.item_tax_template:
@@ -214,7 +229,9 @@ def get_item_tax_template(order, order_item, item, down_payments_item_map):
 		taxes_map = []
 		for tax in taxes_and_charges_template.taxes:
 			taxes_map.append(tax.account_head)
-		item_tax_template_name = find_item_tax_template(taxes_map)
+
+		frappe.errprint(item_tax_map)
+		item_tax_template_name = find_item_tax_template(taxes_map, item_tax_map[order_item.item_code])
 	elif len(item.taxes) > 0:
 		item_tax_template = frappe.get_cached_doc("Item Tax Template", item.taxes[0].get("item_tax_template"))
 		item_tax_template_name = item_tax_template.name
