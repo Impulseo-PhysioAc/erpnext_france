@@ -190,7 +190,6 @@ def add_down_payment_with_tva(order, down_payment_invoice, values):
 				"5,5" if item_tax_template.startswith("TVA réduite") else "20"
 			)
 
-		frappe.errprint(docitem.description)
 		docitem.qty = 1
 		docitem.amount = docitem.rate
 		docitem.uom = "Unité"
