@@ -263,20 +263,43 @@ def set_total_advance_paid(doc):
 			.run(as_list=True)
 		)
 
-		if down_payment_invoices and down_payment_invoices[0]:
-			advance_query = advance_query.where(
-				((ple.against_voucher_type == doc.doctype) & (ple.against_voucher_no == doc.name))
+		down_payment_invoices_list = [d[0] for d in down_payment_invoices] if down_payment_invoices else []
+
+		# Fix logic for ERPNext France override where GL Entry is linked to Payment Entry itself
+		linked_payment_entries = frappe.get_all(
+			"Payment Entry Reference",
+			filters={"reference_doctype": doc.doctype, "reference_name": doc.name},
+			pluck="parent"
+		)
+		if linked_payment_entries:
+			linked_payment_entries = frappe.get_all(
+				"Payment Entry",
+				filters={"name": ["in", linked_payment_entries], "docstatus": 1},
+				pluck="name"
+			)
+
+		condition = (
+			(ple.against_voucher_type == doc.doctype)
+			& (ple.against_voucher_no == doc.name)
+			& (ple.voucher_type == "Payment Entry")
+		)
+
+		if linked_payment_entries:
+			condition |= (
+				(ple.voucher_type == "Payment Entry")
+				& (ple.voucher_no.isin(linked_payment_entries))
+				& (ple.against_voucher_type == "Payment Entry")
+				& (ple.against_voucher_no.isin(linked_payment_entries))
+			)
+
+		if down_payment_invoices_list:
+			condition |= (
+				(ple.against_voucher_type == "Sales Invoice")
+				& (ple.against_voucher_no.isin(down_payment_invoices_list))
 				& (ple.voucher_type == "Payment Entry")
-				| (
-					(ple.against_voucher_type == "Sales Invoice")
-					& (ple.against_voucher_no.isin(down_payment_invoices[0]))
-					& (ple.voucher_type == "Payment Entry")
-				)
 			)
-		else:
-			advance_query = advance_query.where(
-				(ple.against_voucher_type == doc.doctype) & (ple.against_voucher_no == doc.name)
-			)
+
+		advance_query = advance_query.where(condition)
 
 	else:
 		advance_query = advance_query.where(

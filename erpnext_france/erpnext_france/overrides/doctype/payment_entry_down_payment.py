@@ -17,6 +17,10 @@ class PaymentEntryDownPayment(PaymentEntry):
 		# self.set_advance_reference_for_down_payments() # DOKOS
 		self.check_if_down_payment()
 		self.update_unreconciled_amount()
+		
+	def on_submit(self):
+		super().on_submit()
+		self.update_advance_paid()
 
 	def check_if_down_payment(self):
 		is_down_payment = False
@@ -359,7 +363,6 @@ class PaymentEntryDownPayment(PaymentEntry):
 					)
 					if so:
 						doc = frappe.get_doc("Sales Order", so, for_update=True)
-
 						set_total_advance_paid(doc)
 
 	def set_advance_reference_for_down_payments(self):  # @dokos

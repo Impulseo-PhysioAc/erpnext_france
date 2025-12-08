@@ -242,34 +242,29 @@ def get_item_tax_template(order, order_item, item, down_payments_item_map, item_
 
 
 def set_paid_amount_of_linked_invoice(doc, method):
-	if doc.get("references")[0].get("reference_doctype") != "Sales Invoice":
-		return
+	for ref in doc.get("references"):
+		if ref.reference_doctype != "Sales Invoice" or not ref.reference_name:
+			continue
 
-	sales_invoice = frappe.get_cached_doc("Sales Invoice", doc.get("references")[0].get("reference_name"))
+		sales_invoice = frappe.get_doc("Sales Invoice", ref.reference_name)
 
-	if sales_invoice.get("is_down_payment_invoice") == 1:
-		return
+		if sales_invoice.get("is_down_payment_invoice") == 1:
+			continue
 
-	paid_amount = 0.0
-	base_paid_amount = 0.0
-	for data in sales_invoice.payments:
-		data.base_amount = flt(
-			data.amount * sales_invoice.conversion_rate, sales_invoice.precision("base_paid_amount")
-		)
-		paid_amount += data.amount
-		base_paid_amount += data.base_amount
+		# Trust the current outstanding amount in the database
+		current_outstanding = flt(sales_invoice.outstanding_amount)
+		allocated = flt(ref.allocated_amount)
 
-	for advance in sales_invoice.get("advances"):
-		if advance.reference_type == "Payment Entry":
-			paid_amount += advance.advance_amount
-			base_paid_amount += advance.advance_amount
+		if allocated == 0:
+			continue
+		if current_outstanding>0:	
+			new_outstanding = flt(current_outstanding - allocated, sales_invoice.precision("outstanding_amount"))
+		else:
+			new_outstanding = flt(current_outstanding)
+		# Use db_set to bypass "Not allowed to change after submit"
+		sales_invoice.db_set("outstanding_amount", new_outstanding)
 
-	sales_invoice.outstanding_amount = flt(
-		sales_invoice.rounded_total - (paid_amount + doc.paid_amount),
-		sales_invoice.precision("outstanding_amount"),
-	)
-
-	if flt(sales_invoice.outstanding_amount) == 0:
-		sales_invoice.set_status(update=True)
-
-	sales_invoice.save(ignore_permissions=True)
+		if new_outstanding <= 0 and sales_invoice.status != "Paid":
+			sales_invoice.db_set("status", "Paid")
+		elif new_outstanding > 0 and sales_invoice.status == "Paid":
+			sales_invoice.db_set("status", "Partly Paid") if new_outstanding < sales_invoice.grand_total else sales_invoice.db_set("status", "Overdue")
