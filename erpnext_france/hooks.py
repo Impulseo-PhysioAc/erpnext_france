@@ -324,13 +324,13 @@ doc_events = {
 		"on_submit": "erpnext_france.erpnext_france.purchase_invoice.purchase_invoice.correct_gl_entry_supplier_discount",
 		"before_save": [
 			"erpnext_france.controllers.supplier_item_no.before_save",
-			"erpnext_france.controllers.taxes.before_save",
+			#"erpnext_france.controllers.taxes.before_save",
 		],
 	},
 	"Purchase Order": {
 		"before_save": [
 			"erpnext_france.controllers.supplier_item_no.before_save",
-			"erpnext_france.controllers.taxes.before_save",
+			#"erpnext_france.controllers.taxes.before_save",
 		]
 	},
 	"Supplier Quotation": {
