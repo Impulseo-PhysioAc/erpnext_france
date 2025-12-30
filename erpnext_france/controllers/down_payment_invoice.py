@@ -250,6 +250,8 @@ def set_paid_amount_of_linked_invoice(doc, method):
 
 		if sales_invoice.get("is_down_payment_invoice") == 1:
 			continue
+		if not sales_invoice.get("down_payment_against"):
+			continue
 
 		# Trust the current outstanding amount in the database
 		current_outstanding = flt(sales_invoice.outstanding_amount)

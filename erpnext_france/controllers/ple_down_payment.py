@@ -17,9 +17,13 @@ def on_update(doc, method):
 	si = frappe.get_doc('Sales Invoice', doc.voucher_no)
 	if si.total_advance > 0 and 0 < doc.amount_in_account_currency == si.grand_total:
 		doc.amount_in_account_currency = si.grand_total - si.total_advance
+		if si.down_payment_against and si.down_payment_against != "":
+			doc.db_set("amount_in_account_currency", si.grand_total - si.total_advance)
 		frappe.db.set_value(
 			doc.voucher_type,
 			doc.voucher_no,
 			"outstanding_amount",
 			doc.amount_in_account_currency,
 		)
+
+		
