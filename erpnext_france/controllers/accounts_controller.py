@@ -59,10 +59,10 @@ def get_down_payment(doc):
 		advance_row.is_down_payment = d.get("down_payment")
 
 		current_doc.append("advances", advance_row)
-
 		payment_entry = frappe.get_cached_doc(d.reference_type, d.reference_name)
-		for ref in payment_entry.references:
-			ref_sales_invoices.append(ref.reference_name)
+		if hasattr(payment_entry, "references"):
+			for ref in payment_entry.references:
+				ref_sales_invoices.append(ref.reference_name)
 
 	for sinv in ref_sales_invoices:
 		sales_invoice = frappe.get_cached_doc("Sales Invoice", sinv)
