@@ -22,6 +22,13 @@ class PaymentEntryDownPayment(PaymentEntry):
 		super().on_submit()
 		self.update_advance_paid()
 
+	def on_cancel(self):
+		super().on_cancel()
+		# Mirror on_submit: the base on_cancel reverses the GL and delinks invoice
+		# references but never recomputes Sales Order.advance_paid, so without this
+		# the field stays frozen at its submit-time value after cancellation.
+		self.update_advance_paid()
+
 	def check_if_down_payment(self):
 		is_down_payment = False
 		for d in self.get("references"):
